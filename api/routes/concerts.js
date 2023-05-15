@@ -167,33 +167,113 @@ router.post('/concerts/:id/reservation', function (req, res, next) {
   })
 })
 
-router.delete('/concerts/:id/reservation/:reservationId', function (req, res, next) {
-  const reservationId = req.params.reservationId;
+/**
+ * Annuler une réservation pour le concert
+ * DELETE /concerts/:id/reservation
+ */
+router.delete('/concerts/:id/reservation', function (req, res, next) {
+  /* #swagger.parameters['pseudo'] = {
+        in: 'formData',
+        description: 'Le pseudo de l\'utilisateur dont la réservation doit être annulée',
+        required: 'true',
+        type: 'string',
+        format: 'application/x-www-form-urlencoded',
+  } */
 
-  // Perform cancellation logic here
-  cancelReservation(reservationId)
-    .then(() => {
-      res.sendStatus(204); // Return a success status code (e.g., 204 for No Content)
-    })
-    .catch((error) => {
-      console.error(error);
-      res.sendStatus(500); // Return an error status code (e.g., 500 for Internal Server Error)
+  // Vérifier si le pseudo est fourni
+  if (!req.body.pseudo) {
+    res.status(400).set('Content-Type', 'application/hal+json').send('{ "reponse": "Requête invalide, veuillez fournir le pseudo de l\'utilisateur"}')
+    return;
+  }
+
+  // Identification de l'utilisateur
+  connection.query('SELECT id FROM user WHERE pseudo = ?;', [req.body.pseudo], (error, rows, fields) => {
+    if (error) {
+      console.error('Error connecting: ' + error.stack);
+      res.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+
+    // Vérifier si l'utilisateur existe
+    if (rows.length === 0) {
+      res.status(400).set('Content-Type', 'application/hal+json').send('{ "reponse": "Requête invalide, l\'utilisateur n\'existe pas"}')
+      return;
+    }
+
+    const userId = rows[0].id;
+
+    // Annuler la réservation
+    connection.query('UPDATE Reservation SET statut = "annulée" WHERE user_id = ? AND concert_id = ?;', [userId, req.params.id], (error, rows, fields) => {
+      if (error) {
+        console.error('Error connecting: ' + error.stack);
+        res.status(500).json({ error: 'Internal server error' });
+        return;
+      }
+
+      if (rows.affectedRows === 0) {
+        res.status(400).set('Content-Type', 'application/hal+json').send(`{ "reponse": "Requête valide: l'utilisateur ${req.body.pseudo} n'a pas de réservation pour ce concert"}`);
+        return;
+      }
+
+      res.status(200).json({ response: "Réservation annulée avec succès" });
     });
+  });
 });
 
-router.post('/concerts/:id/reservation/:reservationId/confirm', function (req, res, next) {
-  const reservationId = req.params.reservationId;
 
-  // Perform confirmation logic here
-  confirmReservation(reservationId)
-    .then(() => {
-      res.sendStatus(204); // Return a success status code (e.g., 204 for No Content)
-    })
-    .catch((error) => {
-      console.error(error);
-      res.sendStatus(500); // Return an error status code (e.g., 500 for Internal Server Error)
+/**
+ * Confirmer une réservation pour le concert
+ * PUT /concerts/:id/reservation
+ */
+router.put('/concerts/:id/reservation', function (req, res, next) {
+  /* #swagger.parameters['pseudo'] = {
+        in: 'formData',
+        description: 'Le pseudo de l\'utilisateur dont la réservation doit être confirmée',
+        required: 'true',
+        type: 'string',
+        format: 'application/x-www-form-urlencoded',
+  } */
+
+  // Vérifier si le pseudo est fourni
+  if (!req.body.pseudo) {
+    res.status(400).set('Content-Type', 'application/hal+json').send('{ "reponse": "Requête invalide, veuillez fournir le pseudo de l\'utilisateur"}')
+    return;
+  }
+
+  // Identification de l'utilisateur
+  connection.query('SELECT id FROM user WHERE pseudo = ?;', [req.body.pseudo], (error, rows, fields) => {
+    if (error) {
+      console.error('Error connecting: ' + error.stack);
+      res.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+
+    // Vérifier si l'utilisateur existe
+    if (rows.length === 0) {
+      res.status(400).set('Content-Type', 'application/hal+json').send('{ "reponse": "Requête invalide, l\'utilisateur n\'existe pas"}')
+      return;
+    }
+
+    const userId = rows[0].id;
+
+    // Confirmer la réservation
+    connection.query('UPDATE Reservation SET statut = "confirmé" WHERE user_id = ? AND concert_id = ?;', [userId, req.params.id], (error, rows, fields) => {
+      if (error) {
+        console.error('Error connecting: ' + error.stack);
+        res.status(500).json({ error: 'Internal server error' });
+        return;
+      }
+
+      if (rows.affectedRows === 0) {
+        res.status(400).set('Content-Type', 'application/hal+json').send(`{ "reponse": "Requête valide: l'utilisateur ${req.body.pseudo} n'a pas de réservation à confirmer pour ce concert"}`);
+        return;
+      }
+
+      res.status(200).json({ response: "Réservation confirmée avec succès" });
     });
+  });
 });
+
 
 router.get('/concerts/:id/reservations', function (req, res, next) {
   const concertId = req.params.id;
