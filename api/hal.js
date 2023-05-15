@@ -26,10 +26,10 @@ function halLinkObject(url, type = '', name = '', templated = false, deprecation
 
 /**
  * Retourne une représentation Ressource Object (HAL) d'un concert
- * @param {*} concertData Données brutes d'un concert
+ * @param {*} reservationData Données brutes d'un concert
  * @returns un Ressource Object Concert (spec HAL)
  */
-function mapConcertoResourceObject(concertData, baseURL) {
+function mapConcertoResourceObject(reservationData, baseURL) {
 
     /**
      * A faire: requêter le nombre de reservations pour calculer le nombre de places disponibles
@@ -39,16 +39,16 @@ function mapConcertoResourceObject(concertData, baseURL) {
 
     const resourceObject = {
         "_links": [{
-            "self": halLinkObject(baseURL + '/concerts' + '/' + concertData.id, 'string', 'Les informations d\'un concert'),
-            "reservation": halLinkObject(baseURL + '/concerts' + '/' + concertData.id + '/reservation', 'string')
+            "self": halLinkObject(baseURL + '/concerts' + '/' + reservationData.id, 'string', 'Les informations d\'un concert'),
+            "reservation": halLinkObject(baseURL + '/concerts' + '/' + reservationData.id + '/reservation', 'string')
         }],
         "_embedded": {
-            "id": concertData.id,
-            "date": concertData.date_debut,
-            "nb_places": concertData.nb_places,
-            "nb_places_disponibles": concertData.nb_places - reservations.length,
-            "lieu": concertData.lieu,
-            "description": concertData.description
+            "id": reservationData.id,
+            "date": reservationData.date_debut,
+            "nb_places": reservationData.nb_places,
+            "nb_places_disponibles": reservationData.nb_places - reservations.length,
+            "lieu": reservationData.lieu,
+            "description": reservationData.description
         }
     }
 
@@ -72,3 +72,32 @@ function mapUtilisateurtoResourceObject(utilisateurData, baseURL) {
         }
     }
 }
+
+/**
+ * Retourne une représentation Ressource Object (HAL) d'une réservation
+ * @param {*} reservationData Données brutes d'un concert
+ * @returns un Ressource Object Reservation (spec HAL)
+ */
+function mapReservationtoResourceObject(reservationData, baseURL) {
+
+    
+    const resourceObject = {
+        "_links": [{
+            "self": halLinkObject(baseURL + '/concerts' + '/' + reservationData.id + '/reservation', 'string'),
+            "confirm": halLinkObject(baseURL + '/concerts' + '/' + reservationData.id + '/reservation' + '/confirm', 'string'),
+            "cancel": halLinkObject(baseURL + '/concerts' + '/' + reservationData.id + '/reservation' + '/cancel', 'string')
+          }],
+          "_embedded": {
+            "reservation": {
+              "user_id": reservationData.user_id,
+              "concert_id": reservationData.concert_id,
+              "status": reservationData.status,
+              "date_reservation": reservationData.date_reservation
+            }
+          }
+        };
+
+    return resourceObject
+}
+
+module.exports = { halLinkObject, mapConcertoResourceObject, mapUtilisateurtoResourceObject, mapReservationtoResourceObject };
