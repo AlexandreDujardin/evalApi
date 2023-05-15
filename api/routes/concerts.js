@@ -275,28 +275,28 @@ router.put('/concerts/:id/reservation', function (req, res, next) {
 });
 
 
-router.get('/concerts/:id/reservations', function (req, res, next) {
-  const concertId = req.params.id;
+/**
+ * Obtenir la liste des réservations confirmées pour un concert
+ * GET /concerts/:id/reservations
+ */
+router.get('/concerts/:id/reservation', function (req, res, next) {
 
-  // Retrieve confirmed reservations for the concert
-  getConfirmedReservations(concertId)
-    .then((reservations) => {
-      const reservationsResourceObject = {
-        _links: {},
-        _embedded: {
-          reservations: reservations.map((reservation) => ({
-            user: reservation.userId,
-            concert: concertId,
-            status: 'confirmed'
-          }))
-        }
-      };
-      res.status(200).json(reservationsResourceObject);
-    })
-    .catch((error) => {
-      console.error(error);
-      res.sendStatus(500)
-    })
-})
+  // Liste des réservations confirmées
+  connection.query('SELECT * FROM reservation WHERE concert_id = ? AND statut = "confirmé";', [req.params.id], (error, rows, fields) => {
+    if (error) {
+      console.error('Error connecting: ' + error.stack);
+      res.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+
+    if (rows.length === 0) {
+      res.status(200).json([]);
+      return;
+    }
+
+    res.status(200).json(rows);
+  });
+});
+
 
 module.exports = router;
